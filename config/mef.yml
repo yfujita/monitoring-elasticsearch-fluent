@@ -1,0 +1,9 @@
+eshost: "localhost"
+esport: "9200"
+mailto: "hoge@hoge.fuga"
+mailfrom: "fuga@hoge.fuga"
+password: "password"
+interval: 10
+dstat:
+ - server: "server1"
+ - server: "server2"
