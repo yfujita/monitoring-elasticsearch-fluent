@@ -1,18 +1,26 @@
 eshost: "localhost"
-esport: "9200"
-interval: 10
+esport: "80"
 alert:
+ smtpsever: "smtp.gmail.com"
+ smtpport: "587"
  mailto: "hoge@fuga.hoge"
- mailfrom: "fuga@hoge.futa"
+ mailfrom: "fuga@hoge.fuga"
  password: "pass"
  tmpl-dstat-cpu-title: "[monitoring-{server}]ALERT: cpu-used {value}%"
  tmpl-dstat-cpu-msg: "CPU大丈夫？"
+ tmpl-dstat-cpu-normal-title: "[monitoring-{server}]Back to normal: cpu-used {value}%"
+ tmpl-dstat-cpu-normal-msg: "CPU大丈夫"
  tmpl-dstat-disk-title: "[monitoring-{server}]ALERT: disk-used {value}%"
  tmpl-dstat-disk-msg: "DISK大丈夫？"
+ tmpl-dstat-disk-normal-title: "[monitoring-{server}]Back to normal: disk-used {value}%"
+ tmpl-dstat-disk-normal-msg: "DISK大丈夫"
  tmpl-dstat-mem-title: "[monitoring-{server}]ALERT: mem-used {value}%"
  tmpl-dstat-mem-msg: "MEM大丈夫？"
+ tmpl-dstat-mem-normal-title: "[monitoring-{server}]Back to normal: mem-used {value}%"
+ tmpl-dstat-mem-normal-msg: "MEM大丈夫"
 dstat:
- - server: "es type name"
+ - server: "server name (es typeName)"
    cpu-threshold: 80
    disk-threshold: 80
    mem-threshold: 80
+   interval: 60 #seconds

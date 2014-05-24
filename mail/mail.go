@@ -1,34 +1,37 @@
-package gmail
+package mail
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/mail"
 	"net/smtp"
 	"strings"
 )
 
-type Gmail struct {
-	from string
-	auth smtp.Auth
+type Mail struct {
+	smtpServer string
+	smtpPort   string
+	from       string
+	auth       smtp.Auth
 }
 
-func NewGmail(acount, password string) *Gmail {
-	gm := new(Gmail)
-	gm.from = acount
-	gm.auth = smtp.PlainAuth(
+func NewMail(smtpServer, port, acount, password string) *Mail {
+	mail := new(Mail)
+	mail.smtpServer = smtpServer
+	mail.smtpPort = port
+	mail.from = acount
+	mail.auth = smtp.PlainAuth(
 		"",
 		acount,
 		password,
-		"smtp.gmail.com",
+		smtpServer,
 	)
 
-	return gm
+	return mail
 }
 
-func (gm *Gmail) Send(to, title, msg string) {
+func (mail *Mail) Send(to, title, msg string) error {
 
-	content := "From: " + gm.from
+	content := "From: " + mail.from
 	content += "\r\n"
 	content += "To: " + to
 	content += "\r\n"
@@ -44,16 +47,18 @@ func (gm *Gmail) Send(to, title, msg string) {
 	content += base64.StdEncoding.EncodeToString([]byte(msg))
 
 	err := smtp.SendMail(
-		"smtp.gmail.com:587",
-		gm.auth,
-		gm.from,
+		mail.smtpServer+":"+mail.smtpPort,
+		mail.auth,
+		mail.from,
 		[]string{to},
 		[]byte(content),
 	)
 
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
+
+	return nil
 }
 
 func encodeRFC2047(str string) string {

@@ -1,6 +1,8 @@
 package monitor
 
 import (
+	l4g "code.google.com/p/log4go"
+	"errors"
 	"fmt"
 	"github.com/belogik/goes"
 	"strconv"
@@ -37,10 +39,11 @@ func NewMonitorDstat(host, port, typeName string) *MonitorDstat {
 	md.esPort = port
 	md.esIndexName = ES_INDEX_NAME
 	md.esTypeName = typeName
+	l4g.Info("New MonitorDstat. host:%s port:%s index:%s type:%s", md.esHost, md.esPort, md.esIndexName, md.esTypeName)
 	return md
 }
 
-func (md *MonitorDstat) GetDstatInfo(size int) []*DstatInfo {
+func (md *MonitorDstat) GetDstatInfo(size int) ([]*DstatInfo, error) {
 	query := map[string]interface{}{
 		"sort": map[string]interface{}{
 			"@timestamp": "desc",
@@ -57,11 +60,16 @@ func (md *MonitorDstat) GetDstatInfo(size int) []*DstatInfo {
 	conn := goes.NewConnection(md.esHost, md.esPort)
 	searchResponse, err := conn.Search(query, []string{md.esIndexName}, []string{md.esTypeName}, nil)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	hits := searchResponse.Hits.Hits
-	return createInfo(hits, size)
+	if len(hits) == 0 {
+		return nil, errors.New(fmt.Sprintf(
+			"Dstat logs are not found. index:%s, type:%s", md.esIndexName, md.esTypeName))
+	}
+
+	return createInfo(hits, size), nil
 }
 
 func createInfo(hits []goes.Hit, size int) []*DstatInfo {
@@ -84,7 +92,7 @@ func createInfo(hits []goes.Hit, size int) []*DstatInfo {
 		}
 		value, err := strconv.ParseInt(tmpVal, 10, 64)
 		if err != nil {
-			fmt.Println(err)
+			l4g.Error(err)
 			continue
 		}
 
