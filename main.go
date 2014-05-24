@@ -142,6 +142,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		var memRateTotal int64 = 0
 
 		for _, info := range infos {
+			l4g.Debug(info.Timestamp)
 			diskRateTotal += info.DiskUsed * 100 / (info.DiskUsed + info.DiskFree)
 			cpuRateTotal += info.CpuUsr + info.CpuSystem
 			memRateTotal += info.MemUsed * 100 / (info.MemUsed + info.MemBuff + info.MemCach + info.MemFree)

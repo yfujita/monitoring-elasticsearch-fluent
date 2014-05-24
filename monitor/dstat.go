@@ -47,7 +47,8 @@ func (md *MonitorDstat) GetDstatInfo(size int) ([]*DstatInfo, error) {
 	query := map[string]interface{}{
 		"sort": map[string]interface{}{
 			"@timestamp": map[string]interface{}{
-				"order": "desc",
+				"order":           "desc",
+				"ignore_unmapped": true,
 			},
 		},
 		"from": 0,
