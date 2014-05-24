@@ -46,7 +46,9 @@ func NewMonitorDstat(host, port, typeName string) *MonitorDstat {
 func (md *MonitorDstat) GetDstatInfo(size int) ([]*DstatInfo, error) {
 	query := map[string]interface{}{
 		"sort": map[string]interface{}{
-			"@timestamp": "desc",
+			"@timestamp": map[string]interface{}{
+				"order": "desc",
+			},
 		},
 		"from": 0,
 		"size": size * 20,

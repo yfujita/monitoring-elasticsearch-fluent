@@ -115,7 +115,6 @@ func main() {
 		//TODO
 		time.Sleep(1 * time.Hour)
 	}
-
 	l4g.Info("finish")
 }
 

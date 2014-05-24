@@ -1,7 +1,7 @@
 eshost: "localhost"
 esport: "80"
 alert:
- smtpsever: "smtp.gmail.com"
+ smtpserver: "smtp.gmail.com"
  smtpport: "587"
  mailto: "hoge@fuga.hoge"
  mailfrom: "fuga@hoge.fuga"

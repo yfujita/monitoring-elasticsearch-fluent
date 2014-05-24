@@ -1,0 +1,11 @@
+[2014/05/25 02:37:25 JST] [INFO] (main.main:97) start monitoring
+[2014/05/25 02:37:25 JST] [INFO] (github.com/yfujita/monitoring-elasticsearch-fluent/monitor.NewMonitorDstat:42) New MonitorDstat. host:log.n2sm.co.jp port:80 index:dstat-* type:log.n2sm.co.jp
+[2014/05/25 02:37:25 JST] [DEBG] (main.monitoringDstat:131) start monitoring task. server:log.n2sm.co.jp
+[2014/05/25 02:37:25 JST] [INFO] (main.sendAlertMail:200) Send mail: [monitoring-log.n2sm.co.jp]ALERT: disk-used 40% : DISK大丈夫？
+[2014/05/25 02:37:28 JST] [INFO] (main.sendAlertMail:200) Send mail: [monitoring-log.n2sm.co.jp]ALERT: cpu-used 0% : CPU大丈夫？
+[2014/05/25 02:37:30 JST] [INFO] (main.sendAlertMail:200) Send mail: [monitoring-log.n2sm.co.jp]ALERT: mem-used 49% : MEM大丈夫？
+[2014/05/25 02:37:54 JST] [INFO] (main.main:97) start monitoring
+[2014/05/25 02:37:54 JST] [INFO] (github.com/yfujita/monitoring-elasticsearch-fluent/monitor.NewMonitorDstat:42) New MonitorDstat. host:log.n2sm.co.jp port:80 index:dstat-* type:log.n2sm.co.jp
+[2014/05/25 02:37:54 JST] [DEBG] (main.monitoringDstat:131) start monitoring task. server:log.n2sm.co.jp
+[2014/05/25 02:37:54 JST] [INFO] (main.sendAlertMail:200) Send mail: [monitoring-log.n2sm.co.jp]ALERT: disk-used 40% : DISK大丈夫？
+[2014/05/25 02:37:57 JST] [INFO] (main.sendAlertMail:200) Send mail: [monitoring-log.n2sm.co.jp]ALERT: cpu-used 0% : CPU大丈夫？
