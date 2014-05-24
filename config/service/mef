@@ -1,0 +1,81 @@
+#!/bin/sh
+# chkconfig: 99 1
+# description: mef init script
+# processname: mef
+# pidfile:     /var/run/mef.pid
+
+# Source function library.
+if [ -f /etc/rc.d/init.d/functions ]; then
+  . /etc/rc.d/init.d/functions
+fi
+
+mefhome="/usr/share/monitoring-elasticsearch-fluent"
+mef="${mefhome}/bin/monitoring-elasticsearch-fluent"
+prog=mef
+pidfile="/var/run/${prog}.pid"
+
+$user=mef
+
+RETVAL=0
+
+eval_cmd() {
+  local rc=$1
+  if [ $rc -eq 0 ]; then
+    echo '[  OK  ]'
+  else
+    echo '[FAILED]'
+  fi
+  return $rc
+}
+
+start() {
+  if [ -f $pidfile ] ; then
+    echo "${prog} is running."
+    exit 1;
+  fi
+  echo -n "Starting $prog: "
+  if [ -f /etc/rc.d/init.d/functions ]; then
+      daemon --user $user $mef -conf $mefhome/config
+    else
+      su - $user -c "${mef} -conf ${mefhome}/config"
+  fi
+  echo $! > $pidfile
+  touch $lockfile
+  pidof $prog >/dev/null 2>&1
+  eval_cmd $?
+  RETVAL=$?
+}
+
+stop() {
+  echo -n $"Stopping $prog: "
+  local pid=$(pidof $prog)
+  if [ -z "$pid" ]; then
+    echo "$prog not running"
+    return 0
+  fi
+  rm -f $pidfile
+  kill -9 $pid
+  eval_cmd $?
+  RETVAL=$?
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        start
+        stop
+        ;;
+    status)
+        status $prog
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|reload}"
+        exit 1
+esac
+
+exit $RETVAL
