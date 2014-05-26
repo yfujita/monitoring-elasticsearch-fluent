@@ -137,20 +137,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 			continue
 		}
 
-		var diskRateTotal int64 = 0
-		var cpuRateTotal int64 = 0
-		var memRateTotal int64 = 0
-
-		for _, info := range infos {
-			l4g.Debug(info.Timestamp)
-			diskRateTotal += info.DiskUsed * 100 / (info.DiskUsed + info.DiskFree)
-			cpuRateTotal += info.CpuUsr + info.CpuSystem
-			memRateTotal += info.MemUsed * 100 / (info.MemUsed + info.MemBuff + info.MemCach + info.MemFree)
-		}
-
-		var diskRate int64 = diskRateTotal / (int64)(num)
-		var cpuRate int64 = cpuRateTotal / (int64)(num)
-		var memRate int64 = memRateTotal / (int64)(num)
+		cpuRate, diskRate, memRate := GetResourceUsageRate(infos)
 
 		if (int64)(diskRate) >= dstatConfig.diskrate && !diskAlert {
 			diskAlert = true
@@ -184,6 +171,29 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
 	}
 
+}
+
+func GetResourceUsageRate(infos []*monitor.DstatInfo) (cpuRate, diskRate, memRate int64) {
+	num := len(infos)
+	if num == 0 {
+		return 0, 0, 0
+	}
+
+	var diskRateTotal int64 = 0
+	var cpuRateTotal int64 = 0
+	var memRateTotal int64 = 0
+
+	for _, info := range infos {
+		l4g.Debug(info.Timestamp)
+		diskRateTotal += info.DiskUsed * 100 / (info.DiskUsed + info.DiskFree)
+		cpuRateTotal += info.CpuUsr + info.CpuSystem
+		memRateTotal += info.MemUsed * 100 / (info.MemUsed + info.MemBuff + info.MemCach + info.MemFree)
+	}
+
+	diskRate = diskRateTotal / (int64)(num)
+	cpuRate = cpuRateTotal / (int64)(num)
+	memRate = memRateTotal / (int64)(num)
+	return
 }
 
 func NewAlertInfo(titleTemplate, msgTemplate, server, value string) *AlertInfo {
