@@ -18,9 +18,16 @@ alert:
  tmpl-dstat-mem-msg: "MEM大丈夫？"
  tmpl-dstat-mem-normal-title: "[monitoring-{server}]Back to normal: mem-used {value}%"
  tmpl-dstat-mem-normal-msg: "MEM大丈夫"
+ tmpl-applog-title: "[monitoring-{server}]Alert: LogName={logname}   Keyword={keyword}"
+ tmpl-applog-msg: "{value}"
 dstat:
  - server: "server name (es typeName)"
    cpu-threshold: 80
    disk-threshold: 80
    mem-threshold: 80
+   interval: 60 #seconds
+applog:
+ - server: "server name (es typeName)"
+   logname: "name of @log_name"
+   keyword: "keyword for alert"
    interval: 60 #seconds
