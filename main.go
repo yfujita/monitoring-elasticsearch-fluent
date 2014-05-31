@@ -36,12 +36,19 @@ const (
 	CONF_ALERT_TMPL_DSTAT_MEM_MSG           = "tmpl-dstat-mem-msg"
 	CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_TITLE  = "tmpl-dstat-mem-normal-title"
 	CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_MSG    = "tmpl-dstat-mem-normal-msg"
+	CONF_ALERT_TMPL_APPLOG_TITLE            = "tmpl-applog-title"
+	CONF_ALERT_TMPL_APPLOG_MSG              = "tmpl-applog-msg"
 	CONF_DSTAT                              = "dstat"
 	CONF_DSTAT_SERVER                       = "server"
 	CONF_DSTAT_CPU                          = "cpu-threshold"
 	CONF_DSTAT_DISK                         = "disk-threshold"
 	CONF_DSTAT_MEM                          = "mem-threshold"
 	CONF_DSTAT_INTERVAL                     = "interval"
+	CONF_APPLOG                             = "applog"
+	CONF_APPLOG_SERVER                      = "server"
+	CONF_APPLOG_LOGNAME                     = "logname"
+	CONF_APPLOG_KEYWORD                     = "keyword"
+	CONF_APPLOG_INTERVAL                    = "interval"
 )
 
 type AlertInfo struct {
@@ -50,10 +57,11 @@ type AlertInfo struct {
 }
 
 type Config struct {
-	eshost       string
-	esport       string
-	alertConfig  AlertConfig
-	dstatConfigs []DstatConfig
+	eshost        string
+	esport        string
+	alertConfig   AlertConfig
+	dstatConfigs  []DstatConfig
+	applogConfigs []ApplogConfig
 }
 
 type AlertConfig struct {
@@ -74,6 +82,8 @@ type AlertConfig struct {
 	tmplDstatMemMsg          string
 	tmplDstatMemNormalTitle  string
 	tmplDstatMemNormalMsg    string
+	tmplApplogTitle          string
+	tmplApplogMsg            string
 }
 
 type DstatConfig struct {
@@ -84,23 +94,39 @@ type DstatConfig struct {
 	interval int64
 }
 
+type ApplogConfig struct {
+	server   string
+	logname  string
+	keyword  string
+	interval int64
+}
+
 func main() {
 	var confPath string
 	flag.StringVar(&confPath, "conf", "blank", "config file path")
 	flag.Parse()
 	confPath = path.Clean(confPath)
+	if confPath == "blank" {
+		panic("Invalid conf parameter")
+	}
 
-	config := loadConfig(confPath + "/" + CONF_FILE)
 	l4g.LoadConfiguration(confPath + "/" + LOG4G_XML)
 	defer l4g.Close()
+	config := loadConfig(confPath + "/" + CONF_FILE)
 
 	l4g.Info("start monitoring")
 
-	dstatCh := make(chan *AlertInfo, 100)
+	alertCh := make(chan *AlertInfo, 100)
 
 	if len(config.dstatConfigs) > 0 {
 		for _, dstatConfig := range config.dstatConfigs {
-			go monitoringDstat(config.eshost, config.esport, config.alertConfig, dstatConfig, dstatCh)
+			go monitoringDstat(config.eshost, config.esport, config.alertConfig, dstatConfig, alertCh)
+		}
+	}
+
+	if len(config.applogConfigs) > 0 {
+		for _, appConfig := range config.applogConfigs {
+			go monitoringApplog(config.eshost, config.esport, config.alertConfig, appConfig, alertCh)
 		}
 	}
 
@@ -109,13 +135,56 @@ func main() {
 			ai := <-ch
 			sendAlertMail(ai, config)
 		}
-	}(dstatCh, config)
+	}(alertCh, config)
 
 	for {
 		//TODO
 		time.Sleep(1 * time.Hour)
 	}
 	l4g.Info("finish")
+}
+
+func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConfig ApplogConfig, ch chan *AlertInfo) {
+	l4g.Info("start applog monitoring task. logname:%s keyword:%s", applogConfig.logname, applogConfig.keyword)
+	typeName := applogConfig.server
+	timestamp := time.Now().Unix() * 1000
+	ma := monitor.NewMonitorApplog(hostName, port, applogConfig.server)
+	for {
+		l4g.Debug("start applog monitoring. logname:%s keyword:%s", applogConfig.logname, applogConfig.keyword)
+
+		l4g.Debug("Applog timestamp from %d", timestamp)
+		infos, err := ma.GetApplogInfo(applogConfig.logname, applogConfig.keyword, timestamp, 10)
+		if err != nil {
+			l4g.Error(err.Error())
+			time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
+			continue
+		}
+
+		if len(infos) == 0 {
+			time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
+			continue
+		}
+
+		for _, info := range infos {
+			ai := NewAlertInfo(alertConfig.tmplApplogTitle, alertConfig.tmplApplogMsg,
+				typeName, info.Message)
+			ai.title = strings.Replace(ai.title, "{logname}", info.LogName, -1)
+			ai.msg = strings.Replace(ai.msg, "{logname}", info.LogName, -1)
+			ai.title = strings.Replace(ai.title, "{keyword}", info.Keyword, -1)
+			ai.msg = strings.Replace(ai.msg, "{keyword}", info.Keyword, -1)
+			ch <- ai
+			tmpTime, err := time.Parse("2006-01-02T15:04:05-07:00", info.Timestamp)
+			if err == nil {
+				timestamp = tmpTime.Unix() * 1000
+				l4g.Info("Next time = %d", timestamp)
+			} else {
+				l4g.Warn(err.Error())
+			}
+		}
+		time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
+
+		//l4g.Info(ret)
+	}
 }
 
 func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig DstatConfig, ch chan *AlertInfo) {
@@ -127,12 +196,20 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 	cpuAlert := false
 	memAlert := false
 
-	for {
-		l4g.Debug("start monitoring task. server:%s", typeName)
+	l4g.Info("start dstat monitoring task. server:%s", typeName)
 
-		infos, err := md.GetDstatInfo(num)
+	for {
+		l4g.Debug("start dstat monitoring. server:%s", typeName)
+
+		timestamp := (time.Now().Unix() - (60 * 1000)) * 1000
+		infos, err := md.GetDstatInfo(timestamp, num)
 		if err != nil {
 			l4g.Error(err.Error())
+			time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
+			continue
+		}
+		if len(infos) == 0 {
+			l4g.Warn("%s dstat log doesnt exist.", typeName)
 			time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
 			continue
 		}
@@ -223,7 +300,7 @@ func loadConfig(path string) *Config {
 	m := make(map[interface{}]interface{})
 	err = goyaml.Unmarshal(yaml, &m)
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
 
 	config := new(Config)
@@ -248,16 +325,36 @@ func loadConfig(path string) *Config {
 	config.alertConfig.tmplDstatMemMsg = alertConfig[CONF_ALERT_TMPL_DSTAT_MEM_MSG].(string)
 	config.alertConfig.tmplDstatMemNormalTitle = alertConfig[CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_TITLE].(string)
 	config.alertConfig.tmplDstatMemNormalMsg = alertConfig[CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_MSG].(string)
+	config.alertConfig.tmplApplogTitle = alertConfig[CONF_ALERT_TMPL_APPLOG_TITLE].(string)
+	config.alertConfig.tmplApplogMsg = alertConfig[CONF_ALERT_TMPL_APPLOG_MSG].(string)
 
-	dstatConfigs := m[CONF_DSTAT].([]interface{})
-	config.dstatConfigs = make([]DstatConfig, len(dstatConfigs))
-	for i, dstatConfig := range dstatConfigs {
-		tmp := dstatConfig.(map[interface{}]interface{})
-		config.dstatConfigs[i].server = tmp[CONF_DSTAT_SERVER].(string)
-		config.dstatConfigs[i].cpurate = (int64)(tmp[CONF_DSTAT_CPU].(int))
-		config.dstatConfigs[i].diskrate = (int64)(tmp[CONF_DSTAT_DISK].(int))
-		config.dstatConfigs[i].memrate = (int64)(tmp[CONF_DSTAT_MEM].(int))
-		config.dstatConfigs[i].interval = (int64)(tmp[CONF_DSTAT_INTERVAL].(int))
+	if m[CONF_DSTAT] != nil {
+		dstatConfigs := m[CONF_DSTAT].([]interface{})
+		config.dstatConfigs = make([]DstatConfig, len(dstatConfigs))
+		if len(dstatConfigs) > 0 {
+			for i, dstatConfig := range dstatConfigs {
+				tmp := dstatConfig.(map[interface{}]interface{})
+				config.dstatConfigs[i].server = tmp[CONF_DSTAT_SERVER].(string)
+				config.dstatConfigs[i].cpurate = (int64)(tmp[CONF_DSTAT_CPU].(int))
+				config.dstatConfigs[i].diskrate = (int64)(tmp[CONF_DSTAT_DISK].(int))
+				config.dstatConfigs[i].memrate = (int64)(tmp[CONF_DSTAT_MEM].(int))
+				config.dstatConfigs[i].interval = (int64)(tmp[CONF_DSTAT_INTERVAL].(int))
+			}
+		}
+	}
+
+	if m[CONF_APPLOG] != nil {
+		applogConfigs := m[CONF_APPLOG].([]interface{})
+		config.applogConfigs = make([]ApplogConfig, len(applogConfigs))
+		if len(applogConfigs) > 0 {
+			for i, applogConfig := range applogConfigs {
+				tmp := applogConfig.(map[interface{}]interface{})
+				config.applogConfigs[i].server = tmp[CONF_APPLOG_SERVER].(string)
+				config.applogConfigs[i].logname = tmp[CONF_APPLOG_LOGNAME].(string)
+				config.applogConfigs[i].keyword = tmp[CONF_APPLOG_KEYWORD].(string)
+				config.applogConfigs[i].interval = (int64)(tmp[CONF_APPLOG_INTERVAL].(int))
+			}
+		}
 	}
 
 	return config

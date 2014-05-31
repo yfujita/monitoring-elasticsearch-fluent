@@ -43,12 +43,12 @@ func NewMonitorDstat(host, port, typeName string) *MonitorDstat {
 	return md
 }
 
-func (md *MonitorDstat) GetDstatInfo(size int) ([]*DstatInfo, error) {
+func (md *MonitorDstat) GetDstatInfo(from int64, size int) ([]*DstatInfo, error) {
 	query := map[string]interface{}{
 		"sort": map[string]interface{}{
 			"@timestamp": map[string]interface{}{
-				"order":           "desc",
-				"ignore_unmapped": true,
+				"order": "desc",
+				//"ignore_unmapped": true,
 			},
 		},
 		"from": 0,
@@ -56,6 +56,17 @@ func (md *MonitorDstat) GetDstatInfo(size int) ([]*DstatInfo, error) {
 		"query": map[string]interface{}{
 			"query_string": map[string]interface{}{
 				"query": "*:*",
+			},
+		},
+		"filter": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
+					"range": map[string]interface{}{
+						"@timestamp": map[string]interface{}{
+							"from": from,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -98,7 +109,6 @@ func createInfo(hits []goes.Hit, size int) []*DstatInfo {
 			l4g.Error(err)
 			continue
 		}
-
 		if info != nil && hit.Source["@timestamp"] == info.Timestamp {
 			info.set(stat, value)
 		} else {
