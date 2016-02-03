@@ -43,6 +43,7 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, from int64, size
 		"query": map[string]interface{}{
 			"query_string": map[string]interface{}{
 				"query": "@log_name:" + logName + " AND message:*" + keyword + "*",
+				"lowercase_expanded_terms": "false",
 			},
 		},
 		"filter": map[string]interface{}{
