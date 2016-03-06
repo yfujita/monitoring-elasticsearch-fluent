@@ -1,5 +1,5 @@
 eshost: "localhost"
-esport: "80"
+esport: "9200"
 alert:
  smtpserver: "smtp.gmail.com"
  smtpport: "587"
@@ -20,6 +20,9 @@ alert:
  tmpl-dstat-mem-normal-msg: "MEM大丈夫"
  tmpl-applog-title: "[monitoring-{server}]Alert: LogName={logname}   Keyword={keyword}"
  tmpl-applog-msg: "{value}"
+script:
+ directory: "./config/scripts"
+ interval: 10 #seconds
 dstat:
  - server: "server name (es typeName)"
    cpu-threshold: 80

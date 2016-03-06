@@ -49,6 +49,9 @@ const (
 	CONF_APPLOG_LOGNAME                     = "logname"
 	CONF_APPLOG_KEYWORD                     = "keyword"
 	CONF_APPLOG_INTERVAL                    = "interval"
+	CONF_SCRIPT								= "script"
+	CONF_SCRIPT_DIR							= "directory"
+	CONF_SCRIPT_INTERVAL					= "interval"
 )
 
 type AlertInfo struct {
@@ -62,6 +65,7 @@ type Config struct {
 	alertConfig   AlertConfig
 	dstatConfigs  []DstatConfig
 	applogConfigs []ApplogConfig
+	scriptConfig  *ScriptConfig
 }
 
 type AlertConfig struct {
@@ -101,6 +105,11 @@ type ApplogConfig struct {
 	interval int64
 }
 
+type ScriptConfig struct {
+	scriptDir	string
+	interval	int64
+}
+
 func main() {
 	var confPath string
 	flag.StringVar(&confPath, "conf", "blank", "config file path")
@@ -128,6 +137,10 @@ func main() {
 		for _, appConfig := range config.applogConfigs {
 			go monitoringApplog(config.eshost, config.esport, config.alertConfig, appConfig, alertCh)
 		}
+	}
+
+	if config.scriptConfig != nil {
+		go monitorScript(config.alertConfig, config.scriptConfig, alertCh)
 	}
 
 	go func(ch chan *AlertInfo, config *Config) {
@@ -250,6 +263,29 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 
 }
 
+func monitorScript(alertConfig AlertConfig, scriptConfig *ScriptConfig, ch chan *AlertInfo) {
+	l4g.Info("monitorScript")
+	ms := monitor.NewMonitorScript(scriptConfig.scriptDir)
+	for {
+		results, err := ms.GetScriptResult()
+		if(err != nil) {
+			l4g.Error(err.Error())
+			time.Sleep((time.Duration)(scriptConfig.interval) * time.Second)
+			continue;
+		}
+
+		for _, result := range results {
+			if result.ExitCode != 0 {
+				l4g.Info("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10))
+				ch <- NewAlertInfo("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "")
+			}
+		}
+
+		time.Sleep((time.Duration)(scriptConfig.interval) * time.Second)
+	}
+}
+
+
 func GetResourceUsageRate(infos []*monitor.DstatInfo) (cpuRate, diskRate, memRate int64) {
 	num := len(infos)
 	if num == 0 {
@@ -261,7 +297,6 @@ func GetResourceUsageRate(infos []*monitor.DstatInfo) (cpuRate, diskRate, memRat
 	var memRateTotal int64 = 0
 
 	for _, info := range infos {
-		l4g.Debug(info.Timestamp)
 		diskRateTotal += info.DiskUsed * 100 / (info.DiskUsed + info.DiskFree)
 		cpuRateTotal += info.CpuUsr + info.CpuSystem
 		memRateTotal += info.MemUsed * 100 / (info.MemUsed + info.MemBuff + info.MemCach + info.MemFree)
@@ -355,6 +390,13 @@ func loadConfig(path string) *Config {
 				config.applogConfigs[i].interval = (int64)(tmp[CONF_APPLOG_INTERVAL].(int))
 			}
 		}
+	}
+
+	if m[CONF_SCRIPT] != nil {
+		scriptConfig := m[CONF_SCRIPT].(map[interface{}]interface{})
+		config.scriptConfig = new(ScriptConfig)
+		config.scriptConfig.scriptDir = scriptConfig[CONF_SCRIPT_DIR].(string)
+		config.scriptConfig.interval = int64(scriptConfig[CONF_SCRIPT_INTERVAL].(int))
 	}
 
 	return config
