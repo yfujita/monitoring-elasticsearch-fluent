@@ -30,7 +30,6 @@ func NewMail(smtpServer, port, acount, password string) *Mail {
 }
 
 func (mail *Mail) Send(to, title, msg string) error {
-
 	content := "From: " + mail.from
 	content += "\r\n"
 	content += "To: " + to
@@ -50,7 +49,7 @@ func (mail *Mail) Send(to, title, msg string) error {
 		mail.smtpServer+":"+mail.smtpPort,
 		mail.auth,
 		mail.from,
-		[]string{to},
+		strings.Split(to, ","),
 		[]byte(content),
 	)
 
