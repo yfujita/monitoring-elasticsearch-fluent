@@ -266,6 +266,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 func monitorScript(alertConfig AlertConfig, scriptConfig *ScriptConfig, ch chan *AlertInfo) {
 	l4g.Info("monitorScript")
 	ms := monitor.NewMonitorScript(scriptConfig.scriptDir)
+	failureMap := map[string]int64{}
 	for {
 		results, err := ms.GetScriptResult()
 		if(err != nil) {
@@ -275,10 +276,17 @@ func monitorScript(alertConfig AlertConfig, scriptConfig *ScriptConfig, ch chan 
 		}
 
 		for _, result := range results {
-			if result.ExitCode != 0 {
-				l4g.Info("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10))
-				ch <- NewAlertInfo("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "")
+			if result.ExitCode == 0 {
+				if failureMap[result.Filename] != 0 {
+					ch <- NewAlertInfo("Monitoring Script back to normal. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "")
+				}
+			} else {
+				if failureMap[result.Filename] != result.ExitCode {
+					l4g.Info("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10))
+					ch <- NewAlertInfo("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "")
+				}
 			}
+			failureMap[result.Filename] = result.ExitCode
 		}
 
 		time.Sleep((time.Duration)(scriptConfig.interval) * time.Second)
