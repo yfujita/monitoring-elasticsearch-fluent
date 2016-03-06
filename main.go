@@ -1,7 +1,7 @@
 package main
 
 import (
-	l4g "code.google.com/p/log4go"
+	l4g "github.com/alecthomas/log4go"
 	"flag"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/mail"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/monitor"
