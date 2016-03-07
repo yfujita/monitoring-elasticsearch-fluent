@@ -48,6 +48,7 @@ const (
 	CONF_APPLOG_SERVER                      = "server"
 	CONF_APPLOG_LOGNAME                     = "logname"
 	CONF_APPLOG_KEYWORD                     = "keyword"
+	CONF_APPLOG_EXCLUDES					= "excludes"
 	CONF_APPLOG_INTERVAL                    = "interval"
 	CONF_SCRIPT								= "script"
 	CONF_SCRIPT_DIR							= "directory"
@@ -102,6 +103,7 @@ type ApplogConfig struct {
 	server   string
 	logname  string
 	keyword  string
+	excludes string
 	interval int64
 }
 
@@ -166,7 +168,7 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 		l4g.Debug("start applog monitoring. logname:%s keyword:%s", applogConfig.logname, applogConfig.keyword)
 
 		l4g.Debug("Applog timestamp from %d", timestamp)
-		infos, err := ma.GetApplogInfo(applogConfig.logname, applogConfig.keyword, timestamp, 10)
+		infos, err := ma.GetApplogInfo(applogConfig.logname, applogConfig.keyword, applogConfig.excludes, timestamp, 10)
 		if err != nil {
 			l4g.Error(err.Error())
 			time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
@@ -396,6 +398,11 @@ func loadConfig(path string) *Config {
 				config.applogConfigs[i].logname = tmp[CONF_APPLOG_LOGNAME].(string)
 				config.applogConfigs[i].keyword = tmp[CONF_APPLOG_KEYWORD].(string)
 				config.applogConfigs[i].interval = (int64)(tmp[CONF_APPLOG_INTERVAL].(int))
+				if tmp[CONF_APPLOG_EXCLUDES] == nil {
+					config.applogConfigs[i].excludes = ""
+				} else {
+					config.applogConfigs[i].excludes = tmp[CONF_APPLOG_EXCLUDES].(string)
+				}
 			}
 		}
 	}

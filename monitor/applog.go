@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"github.com/belogik/goes"
+	"regexp"
 )
 
 const (
@@ -31,7 +32,7 @@ func NewMonitorApplog(host, port, typeName string) *MonitorApplog {
 	return ma
 }
 
-func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, from int64, size int) ([]*ApplogInfo, error) {
+func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, excludes string, from int64, size int) ([]*ApplogInfo, error) {
 	query := map[string]interface{}{
 		"sort": map[string]interface{}{
 			"@timestamp": map[string]interface{}{
@@ -70,14 +71,22 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, from int64, size
 		return make([]*ApplogInfo, 0), nil
 	}
 
-	array := make([]*ApplogInfo, len(hits))
-	for i, hit := range hits {
+	array := make([]*ApplogInfo, 0)
+	for _, hit := range hits {
 		applogInfo := new(ApplogInfo)
 		applogInfo.LogName = logName
 		applogInfo.Keyword = keyword
 		applogInfo.Message = hit.Source["message"].(string)
 		applogInfo.Timestamp = hit.Source["@timestamp"].(string)
-		array[i] = applogInfo
+
+		if excludes != "" {
+			r := regexp.MustCompile(excludes)
+			if r.MatchString(applogInfo.Message) {
+				continue;
+			}
+		}
+
+		array = append(array, applogInfo)
 	}
 
 	return array, nil

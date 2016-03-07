@@ -33,4 +33,5 @@ applog:
  - server: "server name (es typeName)"
    logname: "name of @log_name"
    keyword: "keyword for alert"
+   excludes: "regex for exclude word"
    interval: 60 #seconds
