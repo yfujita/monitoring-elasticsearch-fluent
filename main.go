@@ -5,6 +5,7 @@ import (
 	"flag"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/mail"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/monitor"
+	"github.com/yfujita/monitoring-elasticsearch-fluent/slack"
 	goyaml "gopkg.in/yaml.v1"
 	"io/ioutil"
 	"path"
@@ -14,45 +15,49 @@ import (
 )
 
 const (
-	CONF_FILE                               = "mef.yml"
-	LOG4G_XML                               = "log4go.xml"
-	CONF_ESHOST                             = "eshost"
-	CONF_ESPORT                             = "esport"
-	CONF_ALERT                              = "alert"
-	CONF_ALERT_SMTP_SERVER                  = "smtpserver"
-	CONF_ALERT_SMTP_PORT                    = "smtpport"
-	CONF_ALERT_MAILTO                       = "mailto"
-	CONF_ALERT_MAILFROM                     = "mailfrom"
-	CONF_ALERT_PASSWORD                     = "password"
-	CONF_ALERT_TMPL_DSTAT_CPU_TITLE         = "tmpl-dstat-cpu-title"
-	CONF_ALERT_TMPL_DSTAT_CPU_MSG           = "tmpl-dstat-cpu-msg"
-	CONF_ALERT_TMPL_DSTAT_CPU_NORMAL_TITLE  = "tmpl-dstat-cpu-normal-title"
-	CONF_ALERT_TMPL_DSTAT_CPU_NORMAL_MSG    = "tmpl-dstat-cpu-normal-msg"
-	CONF_ALERT_TMPL_DSTAT_DISK_TITLE        = "tmpl-dstat-disk-title"
-	CONF_ALERT_TMPL_DSTAT_DISK_MSG          = "tmpl-dstat-disk-msg"
+	CONF_FILE = "mef.yml"
+	LOG4G_XML = "log4go.xml"
+	CONF_ESHOST = "eshost"
+	CONF_ESPORT = "esport"
+	CONF_ALERT = "alert"
+	CONF_ALERT_SMTP_SERVER = "smtpserver"
+	CONF_ALERT_SMTP_PORT = "smtpport"
+	CONF_ALERT_MAILTO = "mailto"
+	CONF_ALERT_MAILFROM = "mailfrom"
+	CONF_ALERT_PASSWORD = "password"
+	CONF_ALERT_SLACK_WEBHOOK_URL = "slack-webhook-url"
+	CONF_ALERT_SLACK_CHANNEL = "slack-channel"
+	CONF_ALERT_SLACK_BOT_NAME = "slack-bot-name"
+	CONF_ALERT_SLACK_BOT_ICON = "slack-bot-icon"
+	CONF_ALERT_TMPL_DSTAT_CPU_TITLE = "tmpl-dstat-cpu-title"
+	CONF_ALERT_TMPL_DSTAT_CPU_MSG = "tmpl-dstat-cpu-msg"
+	CONF_ALERT_TMPL_DSTAT_CPU_NORMAL_TITLE = "tmpl-dstat-cpu-normal-title"
+	CONF_ALERT_TMPL_DSTAT_CPU_NORMAL_MSG = "tmpl-dstat-cpu-normal-msg"
+	CONF_ALERT_TMPL_DSTAT_DISK_TITLE = "tmpl-dstat-disk-title"
+	CONF_ALERT_TMPL_DSTAT_DISK_MSG = "tmpl-dstat-disk-msg"
 	CONF_ALERT_TMPL_DSTAT_DISK_NORMAL_TITLE = "tmpl-dstat-disk-normal-title"
-	CONF_ALERT_TMPL_DSTAT_DISK_NORMAL_MSG   = "tmpl-dstat-disk-normal-msg"
-	CONF_ALERT_TMPL_DSTAT_MEM_TITLE         = "tmpl-dstat-mem-title"
-	CONF_ALERT_TMPL_DSTAT_MEM_MSG           = "tmpl-dstat-mem-msg"
-	CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_TITLE  = "tmpl-dstat-mem-normal-title"
-	CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_MSG    = "tmpl-dstat-mem-normal-msg"
-	CONF_ALERT_TMPL_APPLOG_TITLE            = "tmpl-applog-title"
-	CONF_ALERT_TMPL_APPLOG_MSG              = "tmpl-applog-msg"
-	CONF_DSTAT                              = "dstat"
-	CONF_DSTAT_SERVER                       = "server"
-	CONF_DSTAT_CPU                          = "cpu-threshold"
-	CONF_DSTAT_DISK                         = "disk-threshold"
-	CONF_DSTAT_MEM                          = "mem-threshold"
-	CONF_DSTAT_INTERVAL                     = "interval"
-	CONF_APPLOG                             = "applog"
-	CONF_APPLOG_SERVER                      = "server"
-	CONF_APPLOG_LOGNAME                     = "logname"
-	CONF_APPLOG_KEYWORD                     = "keyword"
-	CONF_APPLOG_EXCLUDES					= "excludes"
-	CONF_APPLOG_INTERVAL                    = "interval"
-	CONF_SCRIPT								= "script"
-	CONF_SCRIPT_DIR							= "directory"
-	CONF_SCRIPT_INTERVAL					= "interval"
+	CONF_ALERT_TMPL_DSTAT_DISK_NORMAL_MSG = "tmpl-dstat-disk-normal-msg"
+	CONF_ALERT_TMPL_DSTAT_MEM_TITLE = "tmpl-dstat-mem-title"
+	CONF_ALERT_TMPL_DSTAT_MEM_MSG = "tmpl-dstat-mem-msg"
+	CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_TITLE = "tmpl-dstat-mem-normal-title"
+	CONF_ALERT_TMPL_DSTAT_MEM_NORMAL_MSG = "tmpl-dstat-mem-normal-msg"
+	CONF_ALERT_TMPL_APPLOG_TITLE = "tmpl-applog-title"
+	CONF_ALERT_TMPL_APPLOG_MSG = "tmpl-applog-msg"
+	CONF_DSTAT = "dstat"
+	CONF_DSTAT_SERVER = "server"
+	CONF_DSTAT_CPU = "cpu-threshold"
+	CONF_DSTAT_DISK = "disk-threshold"
+	CONF_DSTAT_MEM = "mem-threshold"
+	CONF_DSTAT_INTERVAL = "interval"
+	CONF_APPLOG = "applog"
+	CONF_APPLOG_SERVER = "server"
+	CONF_APPLOG_LOGNAME = "logname"
+	CONF_APPLOG_KEYWORD = "keyword"
+	CONF_APPLOG_EXCLUDES = "excludes"
+	CONF_APPLOG_INTERVAL = "interval"
+	CONF_SCRIPT = "script"
+	CONF_SCRIPT_DIR = "directory"
+	CONF_SCRIPT_INTERVAL = "interval"
 )
 
 type AlertInfo struct {
@@ -75,6 +80,10 @@ type AlertConfig struct {
 	mailTo                   string
 	mailFrom                 string
 	password                 string
+	slackWebHookUrl          string
+	slackChannel             string
+	slackBotName             string
+	slackBotIcon             string
 	tmplDstatCpuTitle        string
 	tmplDstatCpuMsg          string
 	tmplDstatCpuNormalTitle  string
@@ -108,8 +117,8 @@ type ApplogConfig struct {
 }
 
 type ScriptConfig struct {
-	scriptDir	string
-	interval	int64
+	scriptDir string
+	interval  int64
 }
 
 func main() {
@@ -271,7 +280,7 @@ func monitorScript(alertConfig AlertConfig, scriptConfig *ScriptConfig, ch chan 
 	failureMap := map[string]int64{}
 	for {
 		results, err := ms.GetScriptResult()
-		if(err != nil) {
+		if (err != nil) {
 			l4g.Error(err.Error())
 			time.Sleep((time.Duration)(scriptConfig.interval) * time.Second)
 			continue;
@@ -330,12 +339,24 @@ func NewAlertInfo(titleTemplate, msgTemplate, server, value string) *AlertInfo {
 }
 
 func sendAlertMail(alertInfo *AlertInfo, config *Config) {
-	l4g.Info("Send mail: " + alertInfo.title + " : " + alertInfo.msg)
-	ml := mail.NewMail(config.alertConfig.smtpServer, config.alertConfig.smtpPort,
-		config.alertConfig.mailFrom, config.alertConfig.password)
-	err := ml.Send(config.alertConfig.mailTo, alertInfo.title, alertInfo.msg)
-	if err != nil {
-		l4g.Error(err.Error())
+	if len(config.alertConfig.mailTo) > 0 {
+		l4g.Info("Send mail: " + alertInfo.title + " : " + alertInfo.msg)
+		ml := mail.NewMail(config.alertConfig.smtpServer, config.alertConfig.smtpPort,
+			config.alertConfig.mailFrom, config.alertConfig.password)
+		err := ml.Send(config.alertConfig.mailTo, alertInfo.title, alertInfo.msg)
+		if err != nil {
+			l4g.Error(err.Error())
+		}
+	}
+
+	if len(config.alertConfig.slackWebHookUrl) > 0 {
+		l4g.Info("Send slack: " + alertInfo.title + " : " + alertInfo.msg)
+		bot := slack.NewBot(config.alertConfig.slackWebHookUrl, config.alertConfig.slackChannel,
+			config.alertConfig.slackBotName, config.alertConfig.slackBotIcon)
+		err := bot.Message(alertInfo.title, alertInfo.msg)
+		if err != nil {
+			l4g.Error(err.Error())
+		}
 	}
 }
 
@@ -358,6 +379,10 @@ func loadConfig(path string) *Config {
 	config.alertConfig.mailTo = alertConfig[CONF_ALERT_MAILTO].(string)
 	config.alertConfig.mailFrom = alertConfig[CONF_ALERT_MAILFROM].(string)
 	config.alertConfig.password = alertConfig[CONF_ALERT_PASSWORD].(string)
+	config.alertConfig.slackWebHookUrl = alertConfig[CONF_ALERT_SLACK_WEBHOOK_URL].(string)
+	config.alertConfig.slackChannel = alertConfig[CONF_ALERT_SLACK_CHANNEL].(string)
+	config.alertConfig.slackBotName = alertConfig[CONF_ALERT_SLACK_BOT_NAME].(string)
+	config.alertConfig.slackBotIcon = alertConfig[CONF_ALERT_SLACK_BOT_ICON].(string)
 	config.alertConfig.tmplDstatDiskTitle = alertConfig[CONF_ALERT_TMPL_DSTAT_DISK_TITLE].(string)
 	config.alertConfig.tmplDstatDiskMsg = alertConfig[CONF_ALERT_TMPL_DSTAT_DISK_MSG].(string)
 	config.alertConfig.tmplDstatDiskNormalTitle = alertConfig[CONF_ALERT_TMPL_DSTAT_DISK_NORMAL_TITLE].(string)
