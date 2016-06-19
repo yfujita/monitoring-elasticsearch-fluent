@@ -59,6 +59,7 @@ const (
 	CONF_SCRIPT_DIR = "directory"
 	CONF_SCRIPT_INTERVAL = "interval"
 	STATE_GOOD = "good"
+	STATE_WARING = "warning"
 	STATE_DANGER = "danger"
 	STATE_NONE = ""
 )
@@ -247,7 +248,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		if (int64)(diskRate) >= dstatConfig.diskrate && !diskAlert {
 			diskAlert = true
 			ch <- NewAlertInfo(alertConfig.tmplDstatDiskTitle, alertConfig.tmplDstatDiskMsg,
-				typeName, strconv.FormatInt(diskRate, 10), STATE_DANGER)
+				typeName, strconv.FormatInt(diskRate, 10), STATE_WARING)
 		} else if (int64)(diskRate) < dstatConfig.diskrate && diskAlert {
 			diskAlert = false
 			ch <- NewAlertInfo(alertConfig.tmplDstatDiskNormalTitle, alertConfig.tmplDstatDiskNormalMsg,
@@ -257,7 +258,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		if cpuRate >= dstatConfig.cpurate && !cpuAlert {
 			cpuAlert = true
 			ch <- NewAlertInfo(alertConfig.tmplDstatCpuTitle, alertConfig.tmplDstatCpuMsg,
-				typeName, strconv.FormatInt(cpuRate, 10), STATE_DANGER)
+				typeName, strconv.FormatInt(cpuRate, 10), STATE_WARING)
 		} else if cpuRate < dstatConfig.cpurate && cpuAlert {
 			cpuAlert = false
 			ch <- NewAlertInfo(alertConfig.tmplDstatCpuNormalTitle, alertConfig.tmplDstatCpuNormalMsg,
@@ -267,7 +268,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		if memRate >= dstatConfig.memrate && !memAlert {
 			memAlert = true
 			ch <- NewAlertInfo(alertConfig.tmplDstatMemTitle, alertConfig.tmplDstatMemMsg,
-				typeName, strconv.FormatInt(memRate, 10), STATE_DANGER)
+				typeName, strconv.FormatInt(memRate, 10), STATE_WARING)
 		} else if memRate < dstatConfig.memrate && memAlert {
 			memAlert = false
 			ch <- NewAlertInfo(alertConfig.tmplDstatMemNormalTitle, alertConfig.tmplDstatMemNormalMsg,
