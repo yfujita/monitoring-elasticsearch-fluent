@@ -5,7 +5,7 @@ import (
 	"flag"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/mail"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/monitor"
-	"github.com/yfujita/monitoring-elasticsearch-fluent/slack"
+	"github.com/yfujita/slackutil"
 	goyaml "gopkg.in/yaml.v1"
 	"io/ioutil"
 	"path"
@@ -58,11 +58,15 @@ const (
 	CONF_SCRIPT = "script"
 	CONF_SCRIPT_DIR = "directory"
 	CONF_SCRIPT_INTERVAL = "interval"
+	STATE_GOOD = "good"
+	STATE_DANGER = "danger"
+	STATE_NONE = ""
 )
 
 type AlertInfo struct {
 	title string
 	msg   string
+	state string
 }
 
 type Config struct {
@@ -191,7 +195,7 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 
 		for _, info := range infos {
 			ai := NewAlertInfo(alertConfig.tmplApplogTitle, alertConfig.tmplApplogMsg,
-				typeName, info.Message)
+				typeName, info.Message, STATE_DANGER)
 			ai.title = strings.Replace(ai.title, "{logname}", info.LogName, -1)
 			ai.msg = strings.Replace(ai.msg, "{logname}", info.LogName, -1)
 			ai.title = strings.Replace(ai.title, "{keyword}", info.Keyword, -1)
@@ -243,31 +247,31 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		if (int64)(diskRate) >= dstatConfig.diskrate && !diskAlert {
 			diskAlert = true
 			ch <- NewAlertInfo(alertConfig.tmplDstatDiskTitle, alertConfig.tmplDstatDiskMsg,
-				typeName, strconv.FormatInt(diskRate, 10))
+				typeName, strconv.FormatInt(diskRate, 10), STATE_DANGER)
 		} else if (int64)(diskRate) < dstatConfig.diskrate && diskAlert {
 			diskAlert = false
 			ch <- NewAlertInfo(alertConfig.tmplDstatDiskNormalTitle, alertConfig.tmplDstatDiskNormalMsg,
-				typeName, strconv.FormatInt(diskRate, 10))
+				typeName, strconv.FormatInt(diskRate, 10), STATE_GOOD)
 		}
 
 		if cpuRate >= dstatConfig.cpurate && !cpuAlert {
 			cpuAlert = true
 			ch <- NewAlertInfo(alertConfig.tmplDstatCpuTitle, alertConfig.tmplDstatCpuMsg,
-				typeName, strconv.FormatInt(cpuRate, 10))
+				typeName, strconv.FormatInt(cpuRate, 10), STATE_DANGER)
 		} else if cpuRate < dstatConfig.cpurate && cpuAlert {
 			cpuAlert = false
 			ch <- NewAlertInfo(alertConfig.tmplDstatCpuNormalTitle, alertConfig.tmplDstatCpuNormalMsg,
-				typeName, strconv.FormatInt(cpuRate, 10))
+				typeName, strconv.FormatInt(cpuRate, 10), STATE_GOOD)
 		}
 
 		if memRate >= dstatConfig.memrate && !memAlert {
 			memAlert = true
 			ch <- NewAlertInfo(alertConfig.tmplDstatMemTitle, alertConfig.tmplDstatMemMsg,
-				typeName, strconv.FormatInt(memRate, 10))
+				typeName, strconv.FormatInt(memRate, 10), STATE_DANGER)
 		} else if memRate < dstatConfig.memrate && memAlert {
 			memAlert = false
 			ch <- NewAlertInfo(alertConfig.tmplDstatMemNormalTitle, alertConfig.tmplDstatMemNormalMsg,
-				typeName, strconv.FormatInt(memRate, 10))
+				typeName, strconv.FormatInt(memRate, 10), STATE_GOOD)
 		}
 		time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
 	}
@@ -289,12 +293,12 @@ func monitorScript(alertConfig AlertConfig, scriptConfig *ScriptConfig, ch chan 
 		for _, result := range results {
 			if result.ExitCode == 0 {
 				if failureMap[result.Filename] != 0 {
-					ch <- NewAlertInfo("Monitoring Script back to normal. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "")
+					ch <- NewAlertInfo("Monitoring Script back to normal. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "", STATE_GOOD)
 				}
 			} else {
 				if failureMap[result.Filename] != result.ExitCode {
 					l4g.Info("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10))
-					ch <- NewAlertInfo("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "")
+					ch <- NewAlertInfo("Monitoring Script Failure. file:" + result.Filename + " exit:" + strconv.FormatInt(result.ExitCode, 10), result.SystemOut, "", "", STATE_DANGER)
 				}
 			}
 			failureMap[result.Filename] = result.ExitCode
@@ -327,7 +331,7 @@ func GetResourceUsageRate(infos []*monitor.DstatInfo) (cpuRate, diskRate, memRat
 	return
 }
 
-func NewAlertInfo(titleTemplate, msgTemplate, server, value string) *AlertInfo {
+func NewAlertInfo(titleTemplate, msgTemplate, server, value, state string) *AlertInfo {
 	ai := new(AlertInfo)
 	ai.title = strings.Replace(
 		strings.Replace(titleTemplate, "{server}", server, -1),
@@ -335,6 +339,7 @@ func NewAlertInfo(titleTemplate, msgTemplate, server, value string) *AlertInfo {
 	ai.msg = strings.Replace(
 		strings.Replace(msgTemplate, "{server}", server, -1),
 		"{value}", value, -1)
+	ai.state = state
 	return ai
 }
 
@@ -351,9 +356,19 @@ func sendAlertMail(alertInfo *AlertInfo, config *Config) {
 
 	if len(config.alertConfig.slackWebHookUrl) > 0 {
 		l4g.Info("Send slack: " + alertInfo.title + " : " + alertInfo.msg)
-		bot := slack.NewBot(config.alertConfig.slackWebHookUrl, config.alertConfig.slackChannel,
+		bot := slackutil.NewBot(config.alertConfig.slackWebHookUrl, config.alertConfig.slackChannel,
 			config.alertConfig.slackBotName, config.alertConfig.slackBotIcon)
-		err := bot.Message(alertInfo.title, alertInfo.msg)
+		var err error
+		if len(alertInfo.state) == 0 {
+			err = bot.Message(alertInfo.title, alertInfo.msg)
+		} else {
+			attachments := make(map[string]string)
+			attachments["title"] = alertInfo.title
+			attachments["text"] = alertInfo.msg
+			attachments["color"] = alertInfo.state
+			err = bot.MessageWithAttachments("", "", []map[string]string{attachments})
+		}
+
 		if err != nil {
 			l4g.Error(err.Error())
 		}
