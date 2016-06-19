@@ -364,7 +364,11 @@ func sendAlertMail(alertInfo *AlertInfo, config *Config) {
 		} else {
 			attachments := make(map[string]string)
 			attachments["title"] = alertInfo.title
-			attachments["text"] = alertInfo.msg
+			if STATE_DANGER == alertInfo.state {
+				attachments["text"] = "@here: " + alertInfo.msg
+			} else {
+				attachments["text"] = alertInfo.msg
+			}
 			attachments["color"] = alertInfo.state
 			err = bot.MessageWithAttachments("", "", []map[string]string{attachments})
 		}
