@@ -371,7 +371,7 @@ func sendAlertMail(alertInfo *AlertInfo, config *Config) {
 				attachments["text"] = alertInfo.msg
 			}
 			attachments["color"] = alertInfo.state
-			err = bot.MessageWithAttachments("", "", []map[string]string{attachments})
+			err = bot.MessageWithAttachments("", []map[string]string{attachments})
 		}
 
 		if err != nil {
