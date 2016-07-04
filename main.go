@@ -203,8 +203,11 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 			ai.msg = strings.Replace(ai.msg, "{keyword}", info.Keyword, -1)
 			ch <- ai
 			tmpTime, err := time.Parse("2006-01-02T15:04:05-07:00", info.Timestamp)
+			if err != nil {
+				tmpTime, err = time.Parse("2006-01-02T15:04:05.000Z", info.Timestamp)
+			}
 			if err == nil {
-				timestamp = tmpTime.Unix() * 1000
+				timestamp = (tmpTime.Unix() + 1) * 1000
 				l4g.Info("Next time = %d", timestamp)
 			} else {
 				l4g.Warn(err.Error())
