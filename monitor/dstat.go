@@ -104,11 +104,12 @@ func createInfo(hits []goes.Hit, size int) []*DstatInfo {
 		if tmpValIndex >= 0 {
 			tmpVal = tmpVal[0:tmpValIndex]
 		}
-		value, err := strconv.ParseInt(tmpVal, 10, 64)
+		floatValue, err := strconv.ParseFloat(tmpVal, 64)
 		if err != nil {
 			l4g.Error(err)
 			continue
 		}
+		value := int64(floatValue)
 		if (stat == "disk-used" || stat == "disk-free") && value == 0 {
 			continue
 		}
