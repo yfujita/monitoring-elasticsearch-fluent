@@ -109,6 +109,9 @@ func createInfo(hits []goes.Hit, size int) []*DstatInfo {
 			l4g.Error(err)
 			continue
 		}
+		if (stat == "disk-used" || stat == "disk-free") && value == 0 {
+			continue
+		}
 		if info != nil && hit.Source["@timestamp"] == info.Timestamp {
 			info.set(stat, value)
 		} else {
