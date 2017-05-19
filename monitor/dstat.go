@@ -100,10 +100,6 @@ func createInfo(hits []goes.Hit, size int) []*DstatInfo {
 		stat := hit.Source["stat"].(string)
 
 		tmpVal := hit.Source["value"].(string)
-		tmpValIndex := strings.Index(tmpVal, ".")
-		if tmpValIndex >= 0 {
-			tmpVal = tmpVal[0:tmpValIndex]
-		}
 		floatValue, err := strconv.ParseFloat(tmpVal, 64)
 		if err != nil {
 			l4g.Error(err)
