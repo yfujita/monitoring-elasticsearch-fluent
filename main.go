@@ -178,6 +178,7 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 	typeName := applogConfig.server
 	timestamp := time.Now().Unix() * 1000
 	ma := monitor.NewMonitorApplog(hostName, port, applogConfig.server)
+	var alertTime int64 = 0
 	for {
 		l4g.Debug("start applog monitoring. logname:%s keyword:%s", applogConfig.logname, applogConfig.keyword)
 
@@ -201,7 +202,6 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 			ai.msg = strings.Replace(ai.msg, "{logname}", info.LogName, -1)
 			ai.title = strings.Replace(ai.title, "{keyword}", info.Keyword, -1)
 			ai.msg = strings.Replace(ai.msg, "{keyword}", info.Keyword, -1)
-			ch <- ai
 			tmpTime, err := time.Parse("2006-01-02T15:04:05-07:00", info.Timestamp)
 			if err != nil {
 				tmpTime, err = time.Parse("2006-01-02T15:04:05.000Z", info.Timestamp)
@@ -211,6 +211,12 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 				l4g.Info("Next time = %d", timestamp)
 			} else {
 				l4g.Warn(err.Error())
+			}
+			if (timestamp - alertTime) > (30 * 60 * 1000) {
+				ch <- ai
+				alertTime = timestamp
+			} else {
+				l4g.Info("Skip alert: " + ai.title + " " + ai.msg)
 			}
 		}
 		time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
