@@ -62,6 +62,7 @@ const (
 	STATE_WARING                            = "warning"
 	STATE_DANGER                            = "danger"
 	STATE_NONE                              = ""
+	ALERT_INTERVAL_MILLIS                   = 30 * 60 * 1000
 )
 
 type AlertInfo struct {
@@ -212,7 +213,7 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 			} else {
 				l4g.Warn(err.Error())
 			}
-			if (timestamp - alertTime) > (30 * 60 * 1000) {
+			if (timestamp - alertTime) > ALERT_INTERVAL_MILLIS {
 				ch <- ai
 				alertTime = timestamp
 			} else {
