@@ -40,7 +40,7 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, excludes string,
 			},
 		},
 		"from": 0,
-		"size": 10,
+		"size": 100,
 		"query": map[string]interface{}{
 			"query_string": map[string]interface{}{
 				"query":                    "@log_name:" + logName + " AND message:*" + keyword + "*",
