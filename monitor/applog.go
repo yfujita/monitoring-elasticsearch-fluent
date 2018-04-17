@@ -43,7 +43,7 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, excludes string,
 		"size": 10,
 		"query": map[string]interface{}{
 			"query_string": map[string]interface{}{
-				"query": "@log_name:" + logName + " AND message:*" + keyword + "*",
+				"query":                    "@log_name:" + logName + " AND message:*" + keyword + "*",
 				"lowercase_expanded_terms": "false",
 			},
 		},
@@ -82,7 +82,7 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, excludes string,
 		if excludes != "" {
 			r := regexp.MustCompile(excludes)
 			if r.MatchString(applogInfo.Message) {
-				continue;
+				continue
 			}
 		}
 

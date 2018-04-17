@@ -1,9 +1,9 @@
 package monitor
 
 import (
-	l4g "github.com/alecthomas/log4go"
 	"errors"
 	"fmt"
+	l4g "github.com/alecthomas/log4go"
 	"github.com/belogik/goes"
 	"strconv"
 )

@@ -1,26 +1,26 @@
 package monitor
 
-import(
+import (
+	"bytes"
 	l4g "github.com/alecthomas/log4go"
 	"io/ioutil"
 	"os/exec"
 	"syscall"
-	"bytes"
 )
 
 type ScriptResult struct {
-	Filename	string
-	ExitCode	int64
-	SystemOut	string
+	Filename  string
+	ExitCode  int64
+	SystemOut string
 }
 
 type MonitorScript struct {
-	ScriptsDirectory	string
+	ScriptsDirectory string
 }
 
 func NewMonitorScript(scriptDir string) *MonitorScript {
 	ms := new(MonitorScript)
-	ms.ScriptsDirectory = scriptDir;
+	ms.ScriptsDirectory = scriptDir
 	return ms
 }
 
@@ -39,7 +39,7 @@ func (ms *MonitorScript) GetScriptResult() ([]*ScriptResult, error) {
 		cmd.Stdout = &stdout
 
 		err := cmd.Start()
-		if(err != nil) {
+		if err != nil {
 			l4g.Error(err)
 		}
 
