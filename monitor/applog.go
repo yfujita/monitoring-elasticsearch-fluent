@@ -7,6 +7,7 @@ import (
 
 const (
 	APPLOG_INDEX_NAME = "applog-*"
+	APPLOG_TYPE_NAME = "mef"
 )
 
 type ApplogInfo struct {
@@ -21,14 +22,16 @@ type MonitorApplog struct {
 	esPort      string
 	esIndexName string
 	esTypeName  string
+	esServerName string
 }
 
-func NewMonitorApplog(host, port, typeName string) *MonitorApplog {
+func NewMonitorApplog(host, port, serverName string) *MonitorApplog {
 	ma := new(MonitorApplog)
 	ma.esHost = host
 	ma.esPort = port
 	ma.esIndexName = APPLOG_INDEX_NAME
-	ma.esTypeName = typeName
+	ma.esTypeName = APPLOG_TYPE_NAME
+	ma.esServerName = serverName
 	return ma
 }
 
@@ -42,17 +45,24 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, excludes string,
 		"from": 0,
 		"size": 100,
 		"query": map[string]interface{}{
-			"query_string": map[string]interface{}{
-				"query":                    "@log_name:" + logName + " AND message:*" + keyword + "*",
-				"lowercase_expanded_terms": "false",
-			},
-		},
-		"filter": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"range": map[string]interface{}{
-						"@timestamp": map[string]interface{}{
-							"gt": from,
+			"bool" : map[string]interface{}{
+				"must" : map[string]interface{}{
+					"query_string": map[string]interface{}{
+						"query":                    "@log_name:" + logName + " AND message:*" + keyword + "*",
+						"lowercase_expanded_terms": "false",
+					},
+				},
+				"filter": []map[string]interface{}{
+					{
+						"range": map[string]interface{}{
+							"@timestamp": map[string]interface{}{
+								"gt": from,
+							},
+						},
+					},
+					{
+						"term": map[string]interface{}{
+							"server_name" : ma.esServerName,
 						},
 					},
 				},
