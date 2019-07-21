@@ -10,6 +10,7 @@ import (
 
 const (
 	ES_INDEX_NAME = "dstat-*"
+	ES_TYPE_NAME = "mef"
 	SCROLL_SIZE   = 1000
 )
 
@@ -30,14 +31,16 @@ type MonitorDstat struct {
 	esPort      string
 	esIndexName string
 	esTypeName  string
+	esServerName string
 }
 
-func NewMonitorDstat(host, port, typeName string) *MonitorDstat {
+func NewMonitorDstat(host, port, serverName string) *MonitorDstat {
 	md := new(MonitorDstat)
 	md.esHost = host
 	md.esPort = port
 	md.esIndexName = ES_INDEX_NAME
-	md.esTypeName = typeName
+	md.esTypeName = ES_TYPE_NAME
+	md.esServerName = serverName
 	l4g.Info("New MonitorDstat. host:%s port:%s index:%s type:%s", md.esHost, md.esPort, md.esIndexName, md.esTypeName)
 	return md
 }
@@ -53,16 +56,23 @@ func (md *MonitorDstat) GetDstatInfo(from int64, size int) ([]*DstatInfo, error)
 		"from": 0,
 		"size": size * 20,
 		"query": map[string]interface{}{
-			"query_string": map[string]interface{}{
-				"query": "*:*",
-			},
-		},
-		"filter": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": map[string]interface{}{
-					"range": map[string]interface{}{
-						"@timestamp": map[string]interface{}{
-							"from": from,
+			"bool" : map[string]interface{}{
+				"must" : map[string]interface{}{
+					"query_string": map[string]interface{}{
+						"query": "*:*",
+					},
+				},
+				"filter": []map[string]interface{}{
+					{
+						"range": map[string]interface{}{
+							"@timestamp": map[string]interface{}{
+								"from": from,
+							},
+						},
+					},
+					{
+						"term": map[string]interface{}{
+							"server_name" : md.esServerName,
 						},
 					},
 				},
