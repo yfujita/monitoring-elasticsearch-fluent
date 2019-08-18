@@ -7,7 +7,7 @@ import (
 
 const (
 	APPLOG_INDEX_NAME = "applog-*"
-	APPLOG_TYPE_NAME = "mef"
+	APPLOG_TYPE_NAME = "_doc"
 )
 
 type ApplogInfo struct {

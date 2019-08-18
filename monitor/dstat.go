@@ -10,7 +10,7 @@ import (
 
 const (
 	ES_INDEX_NAME = "dstat-*"
-	ES_TYPE_NAME = "mef"
+	ES_TYPE_NAME = "_doc"
 	SCROLL_SIZE   = 1000
 )
 
