@@ -7,7 +7,7 @@ import (
 
 const (
 	APPLOG_INDEX_NAME = "applog-*"
-	APPLOG_TYPE_NAME = "_doc"
+	APPLOG_TYPE_NAME  = "_doc"
 )
 
 type ApplogInfo struct {
@@ -18,10 +18,10 @@ type ApplogInfo struct {
 }
 
 type MonitorApplog struct {
-	esHost      string
-	esPort      string
-	esIndexName string
-	esTypeName  string
+	esHost       string
+	esPort       string
+	esIndexName  string
+	esTypeName   string
 	esServerName string
 }
 
@@ -45,8 +45,8 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, excludes string,
 		"from": 0,
 		"size": 100,
 		"query": map[string]interface{}{
-			"bool" : map[string]interface{}{
-				"must" : map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
 					"query_string": map[string]interface{}{
 						"query":                    "@log_name:" + logName + " AND message:*" + keyword + "*",
 						"lowercase_expanded_terms": "false",
@@ -62,7 +62,7 @@ func (ma *MonitorApplog) GetApplogInfo(logName, keyword string, excludes string,
 					},
 					{
 						"term": map[string]interface{}{
-							"server_name" : ma.esServerName,
+							"server_name": ma.esServerName,
 						},
 					},
 				},

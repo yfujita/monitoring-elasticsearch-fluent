@@ -246,7 +246,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		if err != nil || len(infos) == 0 {
 			l4g.Warn("%s dstat log doesnt exist.", typeName)
 			noneInfoCounter++
-			if noneInfoCounter == 10 || (noneInfoCounter % 1440) == 0 {
+			if noneInfoCounter == 10 || (noneInfoCounter%1440) == 0 {
 				ch <- NewAlertInfo("[{server}] ServerLog does not exist.", "",
 					typeName, "", STATE_WARING)
 			}

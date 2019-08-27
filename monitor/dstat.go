@@ -10,7 +10,7 @@ import (
 
 const (
 	ES_INDEX_NAME = "dstat-*"
-	ES_TYPE_NAME = "_doc"
+	ES_TYPE_NAME  = "_doc"
 	SCROLL_SIZE   = 1000
 )
 
@@ -27,10 +27,10 @@ type DstatInfo struct {
 }
 
 type MonitorDstat struct {
-	esHost      string
-	esPort      string
-	esIndexName string
-	esTypeName  string
+	esHost       string
+	esPort       string
+	esIndexName  string
+	esTypeName   string
 	esServerName string
 }
 
@@ -56,8 +56,8 @@ func (md *MonitorDstat) GetDstatInfo(from int64, size int) ([]*DstatInfo, error)
 		"from": 0,
 		"size": size * 20,
 		"query": map[string]interface{}{
-			"bool" : map[string]interface{}{
-				"must" : map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": map[string]interface{}{
 					"query_string": map[string]interface{}{
 						"query": "*:*",
 					},
@@ -72,7 +72,7 @@ func (md *MonitorDstat) GetDstatInfo(from int64, size int) ([]*DstatInfo, error)
 					},
 					{
 						"term": map[string]interface{}{
-							"server_name" : md.esServerName,
+							"server_name": md.esServerName,
 						},
 					},
 				},
