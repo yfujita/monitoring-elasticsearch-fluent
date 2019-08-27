@@ -243,15 +243,10 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 
 		timestamp := (time.Now().Unix() - (60 * 1000)) * 1000
 		infos, err := md.GetDstatInfo(timestamp, num)
-		if err != nil {
-			l4g.Error(err.Error())
-			time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
-			continue
-		}
-		if len(infos) == 0 {
+		if err != nil || len(infos) == 0 {
 			l4g.Warn("%s dstat log doesnt exist.", typeName)
 			noneInfoCounter++
-			if noneInfoCounter == 10 {
+			if noneInfoCounter == 10 || (noneInfoCounter % 1440) == 0 {
 				ch <- NewAlertInfo("[{server}] ServerLog does not exist.", "",
 					typeName, "", STATE_WARING)
 			}
