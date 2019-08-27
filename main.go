@@ -234,7 +234,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 	diskAlert := false
 	cpuAlert := false
 	memAlert := false
-	noneInfoAlert := false
+	noneInfoCounter := 0
 
 	l4g.Info("start dstat monitoring task. server:%s", typeName)
 
@@ -250,19 +250,19 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 		}
 		if len(infos) == 0 {
 			l4g.Warn("%s dstat log doesnt exist.", typeName)
-			if (!noneInfoAlert) {
-				noneInfoAlert = true
+			noneInfoCounter++
+			if noneInfoCounter == 10 {
 				ch <- NewAlertInfo("[{server}] ServerLog does not exist.", "",
 					typeName, "", STATE_WARING)
 			}
 			time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
 			continue
 		} else {
-			if (noneInfoAlert) {
-				noneInfoAlert = false
+			if noneInfoCounter > 10 {
 				ch <- NewAlertInfo("Recovered: [{server}] ServerLog does not exist.", "",
 					typeName, "", STATE_GOOD)
 			}
+			noneInfoCounter = 0
 		}
 
 		cpuRate, diskRate, memRate := GetResourceUsageRate(infos)
