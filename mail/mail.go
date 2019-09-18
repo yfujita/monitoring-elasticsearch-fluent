@@ -14,6 +14,7 @@ type Mail struct {
 	auth       smtp.Auth
 }
 
+// Newmail return mail object
 func NewMail(smtpServer, port, acount, password string) *Mail {
 	mail := new(Mail)
 	mail.smtpServer = smtpServer
@@ -29,6 +30,7 @@ func NewMail(smtpServer, port, acount, password string) *Mail {
 	return mail
 }
 
+// Send returned error
 func (mail *Mail) Send(to, title, msg string) error {
 	content := "From: " + mail.from
 	content += "\r\n"
@@ -61,6 +63,6 @@ func (mail *Mail) Send(to, title, msg string) error {
 }
 
 func encodeRFC2047(str string) string {
-	addr := mail.Address{str, ""}
+	addr := mail.Address{Name: str, Address: ""}
 	return strings.Trim(addr.String(), " <>")
 }

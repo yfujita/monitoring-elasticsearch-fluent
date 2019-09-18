@@ -2,16 +2,18 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
+	"math/rand"
+	"path"
+	"strconv"
+	"strings"
+	"time"
+
 	l4g "github.com/alecthomas/log4go"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/mail"
 	"github.com/yfujita/monitoring-elasticsearch-fluent/monitor"
 	"github.com/yfujita/slackutil"
 	goyaml "gopkg.in/yaml.v1"
-	"io/ioutil"
-	"path"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -128,6 +130,8 @@ type ScriptConfig struct {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	var confPath string
 	flag.StringVar(&confPath, "conf", "blank", "config file path")
 	flag.Parse()
@@ -220,7 +224,7 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 				l4g.Info("Skip alert: " + ai.title + " " + ai.msg)
 			}
 		}
-		time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
+		time.Sleep((time.Duration)(applogConfig.interval+rand.Int63n(20)) * time.Second)
 
 		//l4g.Info(ret)
 	}
@@ -291,7 +295,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 			ch <- NewAlertInfo(alertConfig.tmplDstatMemNormalTitle, alertConfig.tmplDstatMemNormalMsg,
 				typeName, strconv.FormatInt(memRate, 10), STATE_GOOD)
 		}
-		time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
+		time.Sleep((time.Duration)(dstatConfig.interval+rand.Int63n(20)) * time.Second)
 	}
 
 }
