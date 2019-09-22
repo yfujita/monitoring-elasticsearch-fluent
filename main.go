@@ -295,7 +295,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 			ch <- NewAlertInfo(alertConfig.tmplDstatMemNormalTitle, alertConfig.tmplDstatMemNormalMsg,
 				typeName, strconv.FormatInt(memRate, 10), STATE_GOOD)
 		}
-		time.Sleep((time.Duration)(dstatConfig.interval+rand.Int63n(applogConfig.interval)) * time.Second)
+		time.Sleep((time.Duration)(dstatConfig.interval+rand.Int63n(dstatConfig.interval)) * time.Second)
 	}
 
 }
