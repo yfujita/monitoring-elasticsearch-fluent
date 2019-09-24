@@ -1,8 +1,9 @@
 package monitor
 
 import (
-	"github.com/belogik/goes"
 	"regexp"
+
+	"github.com/belogik/goes"
 )
 
 const (

@@ -130,8 +130,6 @@ type ScriptConfig struct {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	var confPath string
 	flag.StringVar(&confPath, "conf", "blank", "config file path")
 	flag.Parse()
@@ -179,6 +177,8 @@ func main() {
 }
 
 func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConfig ApplogConfig, ch chan *AlertInfo) {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	l4g.Info("start applog monitoring task. logname:%s keyword:%s", applogConfig.logname, applogConfig.keyword)
 	typeName := applogConfig.server
 	timestamp := time.Now().Unix() * 1000
@@ -224,13 +224,15 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 				l4g.Info("Skip alert: " + ai.title + " " + ai.msg)
 			}
 		}
-		time.Sleep((time.Duration)(applogConfig.interval+rand.Int63n(applogConfig.interval)) * time.Second)
+		time.Sleep((time.Duration)(applogConfig.interval+r.Int63n(applogConfig.interval)) * time.Second)
 
 		//l4g.Info(ret)
 	}
 }
 
 func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig DstatConfig, ch chan *AlertInfo) {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	typeName := dstatConfig.server
 	num := 12
 
@@ -295,7 +297,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 			ch <- NewAlertInfo(alertConfig.tmplDstatMemNormalTitle, alertConfig.tmplDstatMemNormalMsg,
 				typeName, strconv.FormatInt(memRate, 10), STATE_GOOD)
 		}
-		time.Sleep((time.Duration)(dstatConfig.interval+rand.Int63n(dstatConfig.interval)) * time.Second)
+		time.Sleep((time.Duration)(dstatConfig.interval+r.Int63n(dstatConfig.interval)) * time.Second)
 	}
 
 }

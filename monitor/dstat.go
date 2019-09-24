@@ -3,9 +3,10 @@ package monitor
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	l4g "github.com/alecthomas/log4go"
 	"github.com/belogik/goes"
-	"strconv"
 )
 
 const (
