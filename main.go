@@ -191,12 +191,12 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 		infos, err := ma.GetApplogInfo(applogConfig.logname, applogConfig.keyword, applogConfig.excludes, timestamp, 10)
 		if err != nil {
 			l4g.Error(err.Error())
-			time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
+			time.Sleep((time.Duration)(applogConfig.interval+r.Int63n(applogConfig.interval)) * time.Second)
 			continue
 		}
 
 		if len(infos) == 0 {
-			time.Sleep((time.Duration)(applogConfig.interval) * time.Second)
+			time.Sleep((time.Duration)(applogConfig.interval+r.Int63n(applogConfig.interval)) * time.Second)
 			continue
 		}
 
@@ -256,7 +256,7 @@ func monitoringDstat(hostName, port string, alertConfig AlertConfig, dstatConfig
 				ch <- NewAlertInfo("[{server}] ServerLog does not exist.", "",
 					typeName, "", STATE_WARING)
 			}
-			time.Sleep((time.Duration)(dstatConfig.interval) * time.Second)
+			time.Sleep((time.Duration)(dstatConfig.interval+r.Int63n(dstatConfig.interval)) * time.Second)
 			continue
 		} else {
 			if noneInfoCounter > 10 {
