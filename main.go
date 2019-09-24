@@ -189,12 +189,14 @@ func monitoringApplog(hostName, port string, alertConfig AlertConfig, applogConf
 
 		l4g.Debug("Applog timestamp from %d", timestamp)
 		infos, err := ma.GetApplogInfo(applogConfig.logname, applogConfig.keyword, applogConfig.excludes, timestamp, 10)
+		timestamp = time.Now().Unix() * 1000
 		if err != nil {
 			l4g.Error(err.Error())
 			time.Sleep((time.Duration)(applogConfig.interval+r.Int63n(applogConfig.interval)) * time.Second)
 			continue
 		}
 
+		l4g.Info("Next time = %d", timestamp)
 		if len(infos) == 0 {
 			time.Sleep((time.Duration)(applogConfig.interval+r.Int63n(applogConfig.interval)) * time.Second)
 			continue
